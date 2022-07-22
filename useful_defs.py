@@ -21,20 +21,27 @@ import matplotlib.colors as mcolors
 import matplotlib
 import pickle
 import scipy.special as special
-import ppf
+try: import ppf
+except: pass
 import sys
 sys.path.insert(0, '/home/beriksso/TOFu/analysis/benjamin/github/TOFu/functions/')
+sys.path.insert(0, 'C:/python/TOFu/functions/')
 import tofu_functions as dfs
 import shelve
 import os
 from matplotlib.widgets import SpanSelector
 import string
-import xlrd
+try: import xlrd
+except: pass
 sys.path.insert(0, '/home/beriksso/TOFu/analysis/benjamin/other/return_shot_numbers/')
-from all_shots import check_all_shots
-import matplotlib as mpl
-import KM11data
-import getdat as gd
+try: from all_shots import check_all_shots
+except: pass
+try: import matplotlib as mpl
+except: pass
+try: import KM11data
+except: pass
+try: import getdat as gd
+except: pass
 import scipy.constants as constants
 import inspect
 import time
