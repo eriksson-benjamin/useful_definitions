@@ -695,6 +695,7 @@ def plot_nes_pickle(file_name, show_background=True, title=None, fig_name='tof s
     if title: plt.title(title)
     return fig, plt.gca()    
 
+
 def nes_pickle_to_txt(input_name, output_name):
     '''
     Read NES pickle and write (positive tof) bins, counts and background to textfile
@@ -763,6 +764,14 @@ def get_tofor_times(shot_number, time_slice = [40, 70]):
     
     return sx_times
 
+def plot_tofor(shot_number, time_range):
+    tofor = KM11data.KM11ToF(shot_number, time_range)
+    tofor.plot()
+    x_axis = np.arange(-400, 400.4, 0.4)
+    
+    return x_axis, tofor.tof
+
+    
 def random_colors(size=1, seed=0):
     if seed: np.random.seed(seed)
     if size == 1:
