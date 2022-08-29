@@ -642,7 +642,7 @@ def set_nes_plot_style():
     # Current version of the settings file is backed up in 
     # /home/beriksso/NES/plot_style
 #    plt.style.use(f'/home/jeriks/nes-3/share/nes_plots.mplstyle')
-    plt.style.use(f'/home/beriksso/NES/plot_style/nes_plots.mplstyle')
+    plt.style.use(f'nes_plots.mplstyle')
 
 def plot_nes_pickle(file_name, show_background=True, title=None, fig_name='tof spectrum', log2d=False):
     '''
