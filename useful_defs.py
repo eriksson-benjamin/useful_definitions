@@ -1,6 +1,6 @@
 
 
-2#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 14 07:40:14 2019
@@ -637,12 +637,10 @@ def reset_matplotlib():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 def set_nes_plot_style():
-    
     matplotlib.rcParams['interactive'] = True
-    # Current version of the settings file is backed up in 
-    # /home/beriksso/NES/plot_style
-#    plt.style.use(f'/home/jeriks/nes-3/share/nes_plots.mplstyle')
-    plt.style.use(f'nes_plots.mplstyle')
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, 'nes_plots.mplstyle')
+    plt.style.use(filename)
 
 def plot_nes_pickle(file_name, show_background=True, title=None, fig_name='tof spectrum', log2d=False):
     '''
