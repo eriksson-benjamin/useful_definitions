@@ -104,7 +104,7 @@ def multipage(filename, figs=None, dpi=200, check=True, tight_layout=True):
         else: fig.savefig(pp, format = 'pdf')
     pp.close()
     
-def multifig(filename, check=True, tight_layout=True, ext='pdf'):
+def multifig(filename, check=True, tight_layout=True, ext='pdf', combine_pdf=False):
     save_pdf = False
     figs = [plt.figure(n) for n in plt.get_fignums()]
     if ext=='pdf': 
@@ -123,7 +123,16 @@ def multifig(filename, check=True, tight_layout=True, ext='pdf'):
             command=f'inkscape {filename}_{i}.{ext} --export-pdf={filename}_{i}.pdf'
             os.system(command)
             os.remove(f'{filename}_{i}.{ext}')
-            
+        
+    if combine_pdf:
+        created_files = [f'{filename}_{j}.pdf' for j in range(i+1)]
+        
+        cmd = 'pdfunite '
+        for file_name in created_files:
+            cmd += f'{file_name} '
+        cmd += f'{filename}_combined.pdf'
+        os.system(cmd)
+
 
 # Plot 1D histogram, allows looping several plots into same window
 def hist_1D_s(x_data, title = '', label = 'data set', log = True, bins = 0, 
@@ -960,7 +969,11 @@ def plot_rf_power(shot_number, t_range=[None, None]):
     plt.ylabel('RF power (MW)')
     plt.legend()
     
+
+def tofu_background_component(bgr):
+    new_bgr = np.append(np.flip(bgr[1:]), bgr)
         
+    return new_bgr
     
 
 def plot_kt5p(shot_number, t_range=[None, None]):
@@ -974,16 +987,19 @@ def plot_kt5p(shot_number, t_range=[None, None]):
     # Calculate T fractions
     t_f1 = t[2]/(t[2]+h[2]+d[2])*100
     t_f2 = t[2]/(t[2]+d[2])*100
+    t_f3 = d[2]/(t[2]+d[2]+h[2])*100
     
     # Remove NaNs
-    not_nans = np.invert(np.isnan(t_f1)*np.isnan(t_f2))
+    not_nans = np.invert(np.isnan(t_f1)*np.isnan(t_f2)*np.isnan(t_f3))
     t_f1 = t_f1[not_nans]
     t_f2 = t_f2[not_nans]
+    t_f3 = t_f3[not_nans]
     times = t[4][not_nans]
     
     # Plot
     plt.plot(times, t_f1, label='$n_T/(n_T+n_D+n_H)$')
     plt.plot(times, t_f2, label='$n_T/(n_D+n_T)$')
+    plt.plot(times, t_f3, label='$n_D/(n_D+n_T+n_H$')
     plt.xlabel('Time (s)')
     plt.ylabel('Concentration (%)')
     plt.legend()
@@ -1004,7 +1020,6 @@ def plot_kt5p(shot_number, t_range=[None, None]):
             else: y_min*=0.8
             plt.ylim(y_min, y_max)
     except: breakpoint()
-    pass
     return h, d, t
     
 
@@ -1162,7 +1177,36 @@ def ohmic_heating(shot_number, t0=40, t1=120):
   
 def get_linestyle(ls):
     if ls=='dash-dot-dotted': return (0, (3, 5, 1, 5, 1, 5))
+    elif ls == 'loosely dotted': return (0, (1, 10))
+    elif ls == 'dotted': return (0, (1, 1))
+    elif ls == 'densely dotted': return (0, (1, 1))
+    elif ls == 'long dash with offset': return (5, (10, 3))
+    elif ls == 'loosely dashed': return (0, (5, 10))
+    elif ls == 'dashed': return (0, (5, 5))
+    elif ls == 'densely dashed': return (0, (5, 1))
+    elif ls == 'loosely dashdotted': return (0, (3, 10, 1, 10))
+    elif ls == 'dashdotted': return (0, (3, 5, 1, 5))
+    elif ls == 'densely dashdotted': return (0, (3, 1, 1, 1))
+    elif ls == 'dashdotdotted': return (0, (3, 5, 1, 5, 1, 5))
+    elif ls == 'loosely dashdotdotted': return (0, (3, 10, 1, 10, 1, 10))
+    elif ls == 'densely dashdotdotted': return (0, (3, 1, 1, 1, 1, 1))
+    
     else:
+        print('Available linestyles:')
+        print('loosely dotted') 
+        print('dotted')
+        print('densely dotted') 
+        print('long dash with offset')
+        print('loosely dashed') 
+        print('dashed') 
+        print('densely dashed') 
+        print('loosely dashdotted') 
+        print('dashdotted') 
+        print('densely dashdotted') 
+        print('dashdotdotted') 
+        print('loosely dashdotdotted') 
+        print('densely dashdotdotted')
+        
         raise Exception(f'Unknown linestyle: {ls}')
         
 def get_input_argument(tofu_info, key):
@@ -1281,6 +1325,10 @@ def nes_pickle_plotter(t_counts, t_bins, t_bgr, e_bins_S1, e_bins_S2, matrix_S1,
 
     plt.subplots_adjust(hspace=0.1)
 
+def nes_background(bgr):
+    # Reshape background
+    return np.append(np.flip(bgr[1:]), bgr)
+
 
 def import_data(file_name):
     """Import 2D histogram data from given file."""
@@ -1318,9 +1366,66 @@ def plot_nes_pickle(f_name):
     # Plot 2d histogram
     nes_pickle_plotter(*dat)
 
+def sum_nes_pickles(f_names, f_out=None):
+    """Sum events of NES pickles to single file."""
+    f0 = unpickle(f_names[0])
+    erg_S1 = f0['erg_S1']
+    erg_S2 = f0['erg_S2']
+    counts = f0['counts']
+    bgr_level = f0['bgr_level']
+    hist2d_S1 = f0['hist2d_S1']
+    hist2d_S2 = f0['hist2d_S2']
+    shot_number = f0['shot_number']
+    time_ranges = {shot_number: f0['time_range']}
+    input_arguments = {shot_number: f0['input_arguments']}
     
+    # Theses should be identical for all shots
+    S1_info = f0['S1_info']
+    S2_info = f0['S2_info']
+    bins = f0['bins']
     
+    # Boolean to check for identical input arguments
+    identical_args = True
+    for f_name in f_names[1:]:
+        f0 = unpickle(f_name)
+        erg_S1 += f0['erg_S1']
+        erg_S2 += f0['erg_S2']
+        counts += f0['counts']
+        bgr_level += f0['bgr_level']
+        hist2d_S1 += f0['hist2d_S1']
+        hist2d_S2 += f0['hist2d_S2']
+
+        # Check if input arguments are the same as previous
+        if not np.all(input_arguments[shot_number] == f0['input_arguments']):
+            identical_args = False
+            
+        
+        shot_number = f0['shot_number']
+        time_ranges[shot_number] = f0['time_range']
+        input_arguments[shot_number] = f0['input_arguments']
+            
+    # If all input arguments are identical, just save one version of them
+    if identical_args:
+        input_arguments = f0['input_arguments']
+
+    to_write = {'erg_S1': erg_S1, 'erg_S2': erg_S2, 'bins': bins, 
+                'counts': counts, 'bgr_level': bgr_level, 
+                'hist2d_S1': hist2d_S1, 'hist2d_S2': hist2d_S2, 
+                'time_ranges': time_ranges, 'input_arguments': input_arguments,
+                'S1_info': S1_info, 'S2_info': S2_info}
+    
+    if f_out:
+        pickler(f_out, to_write)
+    
+    return to_write
+        
+            
+        
 if __name__ == '__main__':
+    path = '/common/scratch/beriksso/TOFu/data/model_inadequacy'
+    files = os.listdir(path)
+    fnames = [f'{path}/{file}' for file in files]
+    summed = sum_nes_pickles(fnames, '/home/beriksso/model_inadequacy.pickle')
     pass    
     
     
