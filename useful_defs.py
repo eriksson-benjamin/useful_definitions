@@ -12,7 +12,10 @@ Created on Wed Aug 14 07:40:14 2019
 A lot of messy but useful code.
 '''
 
-from matplotlib.backends.backend_pdf import PdfPages
+try: 
+    from matplotlib.backends.backend_pdf import PdfPages
+except:
+    pass
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
