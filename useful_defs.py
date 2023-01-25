@@ -1576,8 +1576,8 @@ def sum_nes_pickles(f_names, f_out=None):
 
 
 if __name__ == '__main__':
-    path = '/common/scratch/beriksso/TOFu/data/model_inadequacy'
-    files = os.listdir(path)
-    fnames = [f'{path}/{file}' for file in files]
-    summed = sum_nes_pickles(fnames, '/home/beriksso/model_inadequacy.pickle')
+    # path = '/common/scratch/beriksso/TOFu/data/model_inadequacy'
+    # files = os.listdir(path)
+    # fnames = [f'{path}/{file}' for file in files]
+    # summed = sum_nes_pickles(fnames, '/home/beriksso/model_inadequacy.pickle')
     pass
