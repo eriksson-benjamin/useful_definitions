@@ -1574,6 +1574,31 @@ def sum_nes_pickles(f_names, f_out=None):
 
     return to_write
 
+def numpify(dictionary):
+    """Take dictionary of lists and return dictionary with numpy arrays."""
+    to_return = {}
+    for key in dictionary.keys():
+        to_return[key] = np.array(dictionary[key])
+    
+    return to_return
+
+def listify(dictionary):
+    """Take dictionary of numpy arrays and return dictionary of lists."""
+    to_return = {}
+    for key in dictionary.keys():
+        to_return[key] = dictionary[key].tolist()
+
+    return to_return
+
+def get_markers(n):
+    """Return a number of markers"""
+    markers = np.array(['.', '+', 'x', 'v', '^', '<', '>', '1', '2', '3', '4', 's', 'p', 
+                        '*', 'D', 'd', '|', '_', 'P', 'X'])
+    if n > len(markers):
+        raise ValueError(f'Not enough unique markers, max(n) = {len(markers)}.')
+    return markers[0:n]
+
+
 
 if __name__ == '__main__':
     # path = '/common/scratch/beriksso/TOFu/data/model_inadequacy'
