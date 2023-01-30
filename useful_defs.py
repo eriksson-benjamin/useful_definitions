@@ -1599,10 +1599,104 @@ def get_markers(n):
     return markers[0:n]
 
 
+def plot_drf(path):
+    """Plot and return detector response function."""
+    set_nes_plot_style()
+    # Read DRF data
+    drf = json_read_dictionary(path)
+
+    # Plot DRF
+    plot_matrix(drf['matrix'], (drf['x'], drf['y']), log=True,
+                xlabel=f'E ({drf["x_unit"]})',
+                ylabel=f'$t_{{TOF}}$ ({drf["y_unit"]})')
+
+    return drf
+
+
+def plot_drf_energy_projection(tof, drf_path, kinematic_cuts=False):
+    """
+    Plot TOFu response function energy spectrum for given TOF.
+
+    Parameters
+    ----------
+    tof : tuple,
+        Tuple with two upper and lower bounds on time-of-flight.
+    """
+    set_nes_plot_style()
+    drf = numpify(json_read_dictionary(drf_path))
+    
+    # Mask for times-of-flight
+    tof_mask = ((drf['y'] >= tof[0]) & (drf['y'] <= tof[1]))
+    
+    # Projection on energy axis
+    erg_proj = np.sum(drf['matrix'][:, tof_mask], axis=1)
+    
+    # Plot projection
+    plt.figure(f'DRF energy projection {tof[0]}-{tof[1]} ns')
+    plt.plot(drf['x'] / 1000, erg_proj, 'k')
+    plt.xlabel('$E_n$ (MeV)')
+    plt.ylabel('counts/bin')
+    plt.title(f'DRF energy projection {tof[0]}-{tof[1]} ns', loc='right')
+    return 0
+
+
+def plot_kinematic_cuts(tof, cut_factors=[1, 1, 1], proton_recoil=False):
+    """
+    Plot upper/lower limits of proton recoil energies for S1 and S2.
+    
+    Notes
+    -----
+    Set proton_recoil=True to translate from light yield to proton recoil 
+    energy.
+    """
+    set_nes_plot_style()
+
+    S1_min, S1_max, S2_max = dfs.get_kincut_function(tof, cut_factors)
+    unit = 'MeVee'
+    
+    if proton_recoil:
+        S1_min = dfs.inverted_light_yield(S1_min)
+        S1_max = dfs.inverted_light_yield(S1_max)
+        S2_max = dfs.inverted_light_yield(S2_max)
+        unit = 'MeV'
+    
+    plt.figure('S1 kinematic cuts')
+    plt.plot(tof, S1_min, 'r--')
+    plt.plot(tof, S1_max, 'r--')
+    plt.title('S1 kinematic cuts', loc='left')
+    plt.ylabel(f'E ({unit})')
+    plt.xlabel('$t_{TOF}$ (ns)')
+    
+    plt.figure('S2 kinematic cuts')
+    plt.plot(tof, S2_max, 'r--')
+    plt.title('S2 kinematic cuts', loc='left')
+    plt.ylabel(f'E ({unit})')
+    plt.xlabel('$t_{TOF}$ (ns)')
+
+def proton_recoil(tof, cut_factors=[1, 1, 1], proton_recoil=False):
+    """
+    Return min/max proton recoil light yield for given TOF.
+    
+    Notes
+    -----
+    Set proton_recoil=True to translate from light yield to MeV.
+    """
+    S1_min, S1_max, S2_max = dfs.get_kincut_function(tof, cut_factors)
+    
+    if proton_recoil:
+        S1_min = dfs.inverted_light_yield(S1_min)
+        S1_max = dfs.inverted_light_yield(S1_max)
+        S2_max = dfs.inverted_light_yield(S2_max)
+
+    return S1_min, S1_max, S2_max    
+    
 
 if __name__ == '__main__':
-    # path = '/common/scratch/beriksso/TOFu/data/model_inadequacy'
-    # files = os.listdir(path)
-    # fnames = [f'{path}/{file}' for file in files]
-    # summed = sum_nes_pickles(fnames, '/home/beriksso/model_inadequacy.pickle')
-    pass
+    # Read data
+    path = 'C:/python/make_drf/tofu_drf_scaled_kin_ly.json'
+    drf = plot_drf(path)
+    tof = (60, 70)
+    plot_drf_energy_projection(tof, path)
+    
+    plot_kinematic_cuts(np.arange(20, 100), proton_recoil=True)
+    print(proton_recoil([27], proton_recoil=True))
