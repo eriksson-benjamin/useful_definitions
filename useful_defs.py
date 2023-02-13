@@ -1692,6 +1692,7 @@ def proton_recoil(tof, cut_factors=[1, 1, 1], proton_recoil=False):
     
 
 if __name__ == '__main__':
+    # test
     # Read data
     path = 'C:/python/make_drf/tofu_drf_scaled_kin_ly.json'
     drf = plot_drf(path)
@@ -1700,3 +1701,4 @@ if __name__ == '__main__':
     
     plot_kinematic_cuts(np.arange(20, 100), proton_recoil=True)
     print(proton_recoil([27], proton_recoil=True))
+    
