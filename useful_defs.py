@@ -139,9 +139,9 @@ def multifig(filename, check=True, tight_layout=True, ext='pdf', combine_pdf=Fal
                     print('Overwriting file.')
         if tight_layout:
             fig.savefig(f'{filename}_{i}.{ext}', format=ext,
-                        bbox_inches='tight', pad_inches=0)
+                        bbox_inches='tight', pad_inches=0, dpi=300)
         else:
-            fig.savefig(f'{filename}_{i}.{ext}', format=ext)
+            fig.savefig(f'{filename}_{i}.{ext}', format=ext, dpi=300)
 
         if save_pdf:
             command = f'inkscape {filename}_{i}.{ext} --export-pdf={filename}_{i}.pdf'
