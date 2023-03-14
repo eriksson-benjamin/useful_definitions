@@ -1582,11 +1582,37 @@ def numpify(dictionary):
     return to_return
 
 def listify(dictionary):
-    """Take dictionary of numpy arrays and return dictionary of lists."""
-    to_return = {}
-    for key in dictionary.keys():
-        to_return[key] = dictionary[key].tolist()
+    """
+    Converts any NumPy arrays in a dictionary to lists.
 
+    Parameters
+    ----------
+    dictionary : dict
+        A dictionary possibly containing NumPy arrays.
+
+    Returns
+    -------
+    dict
+        A new dictionary with the same keys and values as the input dictionary,
+        but where NumPy arrays have been replaced with lists.
+
+    Notes
+    -----
+    This function recursively iterates through the input dictionary and 
+    converts any NumPy arrays it finds to lists. It also handles string values 
+    and nested dictionaries.
+    """    
+    to_return = {}
+    for key, value in dictionary.items():
+        if isinstance(value, np.ndarray):
+            to_return[key] = value.tolist()
+        elif isinstance(value, np.str_):
+            to_return[key] = str(value)
+        elif isinstance(value, dict):
+            to_return[key] = listify(value)
+        else:
+            to_return[key] = value
+        
     return to_return
 
 def get_markers(n):
@@ -1720,6 +1746,49 @@ def normalize(d1, d2):
     return norm
 
 
+def pickle_to_json(pickle_path, json_path):
+    """
+    Transforms a pickle file to JSON format and saves it to disk.
+
+    Parameters
+    ----------
+    pickle_path : str
+        Path to the input pickle file.
+    json_path : str
+        Path to the output JSON file.
+
+    Returns
+    -------
+    dict
+        A dictionary with the same keys and values as the unpickled
+        object, but where NumPy arrays have been converted to lists.
+    
+    Notes
+    -----
+    This function takes in the path to a pickle file and saves the equivalent
+    JSON file. All numpy arrays are converted to lists. All other objects are 
+    preserved.
+    """
+    
+    p = unpickle(pickle_path)
+    j_out = {}
+    for key, value in p.items():
+        if isinstance(value, np.ndarray):
+            j_out[key] = value.tolist()
+        elif isinstance(value, np.str_):
+            j_out[key] = str(value)
+        elif isinstance(value, dict):
+            j_out[key] = listify(value)
+        else:
+            j_out[key] = value
+    
+    json_write_dictionary(json_path, j_out)
+    
+    return j_out
+
+
+
 if __name__ == '__main__':
-    plot_discharge(99472)
+    j = pickle_to_json('/home/beriksso/TOFu/analysis/benjamin/github/TOFu/102181_48.2_54.0.pickle',
+                       '/home/beriksso/102181_48.2_54.0.json')
     
