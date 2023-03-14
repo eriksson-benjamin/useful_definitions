@@ -1004,12 +1004,11 @@ def plot_discharge(shot_number, t=[None, None]):
     if len(nbi[2] > 0):
         # Which ion was used in beams?
         beam_gas = ppf.ppfget(dda='NBI', dtyp='GAS', pulse=shot_number)[0]
-        bg = beam_gas[::-1]
-        gas_type = bg[0:bg.find(' ')][::-1]
+        gas_type = beam_gas.split()[-1]
 
         # Plot NBI
         ax[1, 0].plot(nbi[4], nbi[2] / 1E6, color=colors[0],
-                      linestyle=ls[0], label=f'{gas_type[0]} NBI')
+                      linestyle=ls[0], label=f'{gas_type} NBI')
 
     if len(icrh[2] > 0):
         ax[1, 0].plot(icrh[4], icrh[2] / 1E6, color=colors[1],
@@ -1323,7 +1322,7 @@ def get_linestyle(ls):
     elif ls == 'loosely dotted':
         return (0, (1, 10))
     elif ls == 'dotted':
-        return (0, (1, 1))
+        return (0, (1, 2))
     elif ls == 'densely dotted':
         return (0, (1, 1))
     elif ls == 'long dash with offset':
@@ -1690,15 +1689,37 @@ def proton_recoil(tof, cut_factors=[1, 1, 1], proton_recoil=False):
 
     return S1_min, S1_max, S2_max    
     
+def normalize(d1, d2):
+    """
+    Return the factor to multiply 'd1' with such that the integral under 'd1' 
+    and 'd2' are equal.
+    
+    Parameters:
+    -----------
+    d1 : tuple or list
+        A tuple or list containing two arrays 'd1[0]' and 'd1[1]', where 
+        'd1[0]' is the array containing x-coordinates and 'd1[1]' is the array 
+        containing y-coordinates of the first distribution 'd1'.
+        
+    d2 : tuple or list
+        A tuple or list containing two arrays 'd2[0]' and 'd2[1]', where 
+        'd2[0]' is the array containing x-coordinates and 'd2[1]' is the array 
+        containing y-coordinates of the  second distribution 'd2'.
+        
+    Returns:
+    --------
+    factor : float
+           The factor to multiply 'd1' with such that the integral under 'd1' 
+           and 'd2' are equal.
+    """
+    f1 = np.trapz(y=d1[1], x=d1[0])
+    f2 = np.trapz(y=d2[1], x=d2[0])
+    
+    norm = f2 / f1
+    
+    return norm
+
 
 if __name__ == '__main__':
-    # test
-    # Read data
-    path = 'C:/python/make_drf/tofu_drf_scaled_kin_ly.json'
-    drf = plot_drf(path)
-    tof = (60, 70)
-    plot_drf_energy_projection(tof, path)
-    
-    plot_kinematic_cuts(np.arange(20, 100), proton_recoil=True)
-    print(proton_recoil([27], proton_recoil=True))
+    plot_discharge(99472)
     
