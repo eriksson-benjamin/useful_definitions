@@ -1787,6 +1787,71 @@ def pickle_to_json(pickle_path, json_path):
     return j_out
 
 
+def running_average(a, n):
+    """
+    Compute the running average and standard deviation of an input array.
+    
+    Parameters
+    ----------
+    a : array_like,
+        Input array to compute the running average and standard deviation.
+    n : int,
+        Number of elements (plus/minus) to include in the running average.
+    
+    Returns
+    -------
+    average : ndarray,
+        Array of the same shape as the input array 'a' containing the running 
+        averages.
+    std : ndarray,
+        Array of the same shape as the input array 'a' containing the running 
+        standard deviations.
+    
+    Notes
+    -----
+    The function computes the running average and standard deviation of the 
+    input array by dividing it into three parts:
+    - The beginning and end parts of length 'n', where the running average and
+      standard deviation are computed independently.
+    - The middle part of the array, where the running average and standard 
+      deviation are computed over a window of length '2n+1'.
+    """    
+    # Beginning/end part of list
+    start_average = np.zeros(n)
+    end_average = np.zeros(n)
+    start_std = np.zeros(n)
+    end_std = np.zeros(n)
+    for i in range(n):
+        # Choose beginning/end of list
+        start_of_list = a[0:i+n+1]
+        end_of_list = a[-2*n+i:]
+        
+        # Calculate average
+        start_average[i] = np.mean(start_of_list)
+        end_average[i] = np.mean(end_of_list)
+        
+        # Calculate standard deviation
+        start_std[i] = np.std(start_of_list)
+        end_std[i] = np.std(end_of_list)
+
+    # Middle part of list
+    mid_of_list = np.zeros([len(a) - 2*n, 2*n + 1])
+    for i in range(len(a) - 2*n):
+        # Choose middle part of list
+        mid_of_list[i] = a[i:2*n+i+1]
+        
+    # Calculate average
+    mid_average = np.mean(mid_of_list, axis=1)
+
+    # Calculate standard devitation
+    mid_std = np.std(mid_of_list, axis=1)
+    
+    # Concatenate arrays
+    average = np.concatenate((start_average, mid_average, end_average))
+    std = np.concatenate((start_std, mid_std, end_std))
+    
+    return average, std
+
 
 if __name__ == '__main__':
     j = pickle_to_json('/home/beriksso/TOFu/analysis/benjamin/github/TOFu/102181_48.2_54.0.pickle',
