@@ -741,7 +741,7 @@ def get_Te(shot_number, time_range=None, diag='all'):
         Te['LID2'] = [lid2_te[4], lid2_te[2] / 1E3]
     if diag in ('ECM1', 'all'):
         ecm1_te = ppf.ppfget(dda='ECM1', dtyp='TCOM', pulse=shot_number)
-        Te['ECM1'] = [ecm1_te[4], ecm1_te[2]]
+        Te['ECM1'] = [ecm1_te[4], ecm1_te[2] / 1E3]
     
     # Find time slice
     if time_range:
