@@ -721,6 +721,39 @@ def get_CXRS_Ti(shot_number, time_range=None):
     return Ti, time
 
 
+def get_Te(shot_number, time_range=None, diag='all'):
+    '''
+    Return the electron temperature (keV) and time (s) for a given shot 
+    number measured by various diagnostics.
+    '''
+    Te = {}
+    if diag in ('HRTX', 'all'):
+        hrts_te = ppf.ppfget(dda='HRTX', dtyp='TE0', pulse=shot_number)
+        Te['HRTX'] = [hrts_te[4], hrts_te[2] / 1E3]
+    if diag in ('KK3', 'all'):
+        kk3_te = ppf.ppfget(dda='KK3', dtyp='TEnn', pulse=shot_number)
+        Te['KK3'] = [kk3_te[4], kk3_te[2] / 1E3]
+    if diag in ('LIDX', 'all'):
+        lidar_te = ppf.ppfget(dda='LIDX', dtyp='TE0', pulse=shot_number)
+        Te['LIDX'] = [lidar_te[4], lidar_te[2] / 1E3]
+    if diag in ('LID2', 'all'):
+        lid2_te = ppf.ppfget(dda='LID2', dtyp='TEAV', pulse=shot_number)
+        Te['LID2'] = [lid2_te[4], lid2_te[2] / 1E3]
+    if diag in ('ECM1', 'all'):
+        ecm1_te = ppf.ppfget(dda='ECM1', dtyp='TCOM', pulse=shot_number)
+        Te['ECM1'] = [ecm1_te[4], ecm1_te[2]]
+    
+    # Find time slice
+    if time_range:
+        for key, val in Te.items():
+            start = np.searchsorted(val[0], time_range[0], side='right')
+            stop = np.searchsorted(val[0], time_range[1], side='left')
+            new_val = [val[0][start:stop], val[1][start:stop]]
+            Te[key] = new_val
+    
+    return Te
+
+
 def reset_matplotlib():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
@@ -1854,6 +1887,4 @@ def running_average(a, n):
 
 
 if __name__ == '__main__':
-    j = pickle_to_json('/home/beriksso/TOFu/analysis/benjamin/github/TOFu/102181_48.2_54.0.pickle',
-                       '/home/beriksso/102181_48.2_54.0.json')
-    
+    pass
