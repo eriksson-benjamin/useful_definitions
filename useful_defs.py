@@ -1748,6 +1748,7 @@ def proton_recoil(tof, cut_factors=[1, 1, 1], proton_recoil=False):
 
     return S1_min, S1_max, S2_max    
     
+
 def normalize(d1, d2):
     """
     Return the factor to multiply 'd1' with such that the integral under 'd1' 
