@@ -742,7 +742,7 @@ def get_Te(shot_number, time_range=None, diag='all'):
     if diag in ('ECM1', 'all'):
         ecm1_te = ppf.ppfget(dda='ECM1', dtyp='TCOM', pulse=shot_number)
         Te['ECM1'] = [ecm1_te[4], ecm1_te[2] / 1E3]
-    
+
     # Find time slice
     if time_range:
         for key, val in Te.items():
@@ -750,7 +750,7 @@ def get_Te(shot_number, time_range=None, diag='all'):
             stop = np.searchsorted(val[0], time_range[1], side='left')
             new_val = [val[0][start:stop], val[1][start:stop]]
             Te[key] = new_val
-    
+
     return Te
 
 
@@ -1331,8 +1331,8 @@ def ohmic_heating(shot_number, t0=40, t1=120):
     T_e /= k_convert
 
     # Calculate Debye length [m]
-    lambda_d = np.sqrt(constants.epsilon_0 * constants.k *
-                       T_e / (n_e * constants.e**2))
+    lambda_d = np.sqrt(constants.epsilon_0 * constants.k
+                       * T_e / (n_e * constants.e**2))
 
     # Calculate coulomb logarithm
     ln_L = np.log(12 * np.pi * n_e * lambda_d**3)
@@ -1487,13 +1487,13 @@ def nes_pickle_plotter(t_counts, t_bins, t_bgr, e_bins_S1, e_bins_S2, matrix_S1,
     y1 = (0, 2.3)
     y2 = (0, 6)
     x3 = (-100, 100)
-    y3 = (10, 2E3)
+    # y3 = (10, 2E3)
     ax1.set_ylim(y1)
     ax2.set_ylim(y2)
     ax3.set_yscale('log')
-    ax3.set_yticks([1, 10, 100, 1000])
-    ax3.set_xlim(x3)
-    ax3.set_ylim(y3)
+    # ax3.set_yticks([1, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7])
+    # ax3.set_xlim(x3)
+    ax3.set_ylim(bottom=1)
 
     bbox = dict(facecolor='white', edgecolor='black')
     ax1.text(0.89, 0.88, '(a)', transform=ax1.transAxes, bbox=bbox)
@@ -1511,6 +1511,8 @@ def nes_pickle_plotter(t_counts, t_bins, t_bgr, e_bins_S1, e_bins_S2, matrix_S1,
         print('Colorbar feature not available on Galactica.')
 
     plt.subplots_adjust(hspace=0.1)
+
+    return fig, (ax1, ax2, ax3)
 
 
 def nes_background(bgr):
@@ -1551,7 +1553,9 @@ def plot_nes_pickle(f_name):
     dat = import_data(f_name)
 
     # Plot 2d histogram
-    nes_pickle_plotter(*dat)
+    fig, (ax1, ax2, ax3) = nes_pickle_plotter(*dat)
+
+    return fig, (ax1, ax2, ax3)
 
 
 def sum_nes_pickles(f_names, f_out=None):
@@ -1606,13 +1610,15 @@ def sum_nes_pickles(f_names, f_out=None):
 
     return to_write
 
+
 def numpify(dictionary):
     """Take dictionary of lists and return dictionary with numpy arrays."""
     to_return = {}
     for key in dictionary.keys():
         to_return[key] = np.array(dictionary[key])
-    
+
     return to_return
+
 
 def listify(dictionary):
     """
@@ -1634,7 +1640,7 @@ def listify(dictionary):
     This function recursively iterates through the input dictionary and 
     converts any NumPy arrays it finds to lists. It also handles string values 
     and nested dictionaries.
-    """    
+    """
     to_return = {}
     for key, value in dictionary.items():
         if isinstance(value, np.ndarray):
@@ -1645,15 +1651,17 @@ def listify(dictionary):
             to_return[key] = listify(value)
         else:
             to_return[key] = value
-        
+
     return to_return
+
 
 def get_markers(n):
     """Return a number of markers"""
-    markers = np.array(['.', '+', 'x', 'v', '^', '<', '>', '1', '2', '3', '4', 's', 'p', 
+    markers = np.array(['.', '+', 'x', 'v', '^', '<', '>', '1', '2', '3', '4', 's', 'p',
                         '*', 'D', 'd', '|', '_', 'P', 'X'])
     if n > len(markers):
-        raise ValueError(f'Not enough unique markers, max(n) = {len(markers)}.')
+        raise ValueError(
+            f'Not enough unique markers, max(n) = {len(markers)}.')
     return markers[0:n]
 
 
@@ -1682,13 +1690,13 @@ def plot_drf_energy_projection(tof, drf_path, kinematic_cuts=False):
     """
     set_nes_plot_style()
     drf = numpify(json_read_dictionary(drf_path))
-    
+
     # Mask for times-of-flight
     tof_mask = ((drf['y'] >= tof[0]) & (drf['y'] <= tof[1]))
-    
+
     # Projection on energy axis
     erg_proj = np.sum(drf['matrix'][:, tof_mask], axis=1)
-    
+
     # Plot projection
     plt.figure(f'DRF energy projection {tof[0]}-{tof[1]} ns')
     plt.plot(drf['x'] / 1000, erg_proj, 'k')
@@ -1701,7 +1709,7 @@ def plot_drf_energy_projection(tof, drf_path, kinematic_cuts=False):
 def plot_kinematic_cuts(tof, cut_factors=[1, 1, 1], proton_recoil=False):
     """
     Plot upper/lower limits of proton recoil energies for S1 and S2.
-    
+
     Notes
     -----
     Set proton_recoil=True to translate from light yield to proton recoil 
@@ -1711,60 +1719,62 @@ def plot_kinematic_cuts(tof, cut_factors=[1, 1, 1], proton_recoil=False):
 
     S1_min, S1_max, S2_max = dfs.get_kincut_function(tof, cut_factors)
     unit = 'MeVee'
-    
+
     if proton_recoil:
         S1_min = dfs.inverted_light_yield(S1_min)
         S1_max = dfs.inverted_light_yield(S1_max)
         S2_max = dfs.inverted_light_yield(S2_max)
         unit = 'MeV'
-    
+
     plt.figure('S1 kinematic cuts')
     plt.plot(tof, S1_min, 'r--')
     plt.plot(tof, S1_max, 'r--')
     plt.title('S1 kinematic cuts', loc='left')
     plt.ylabel(f'E ({unit})')
     plt.xlabel('$t_{TOF}$ (ns)')
-    
+
     plt.figure('S2 kinematic cuts')
     plt.plot(tof, S2_max, 'r--')
     plt.title('S2 kinematic cuts', loc='left')
     plt.ylabel(f'E ({unit})')
     plt.xlabel('$t_{TOF}$ (ns)')
 
+
 def proton_recoil(tof, cut_factors=[1, 1, 1], proton_recoil=False):
     """
     Return min/max proton recoil light yield for given TOF.
-    
+
     Notes
     -----
     Set proton_recoil=True to translate from light yield to MeV.
     """
     S1_min, S1_max, S2_max = dfs.get_kincut_function(tof, cut_factors)
-    
+
     if proton_recoil:
         S1_min = dfs.inverted_light_yield(S1_min)
         S1_max = dfs.inverted_light_yield(S1_max)
         S2_max = dfs.inverted_light_yield(S2_max)
 
-    return S1_min, S1_max, S2_max    
-    
+    return S1_min, S1_max, S2_max
+
+
 def normalize(d1, d2):
     """
     Return the factor to multiply 'd1' with such that the integral under 'd1' 
     and 'd2' are equal.
-    
+
     Parameters:
     -----------
     d1 : tuple or list
         A tuple or list containing two arrays 'd1[0]' and 'd1[1]', where 
         'd1[0]' is the array containing x-coordinates and 'd1[1]' is the array 
         containing y-coordinates of the first distribution 'd1'.
-        
+
     d2 : tuple or list
         A tuple or list containing two arrays 'd2[0]' and 'd2[1]', where 
         'd2[0]' is the array containing x-coordinates and 'd2[1]' is the array 
         containing y-coordinates of the  second distribution 'd2'.
-        
+
     Returns:
     --------
     factor : float
@@ -1773,9 +1783,9 @@ def normalize(d1, d2):
     """
     f1 = np.trapz(y=d1[1], x=d1[0])
     f2 = np.trapz(y=d2[1], x=d2[0])
-    
+
     norm = f2 / f1
-    
+
     return norm
 
 
@@ -1795,14 +1805,14 @@ def pickle_to_json(pickle_path, json_path):
     dict
         A dictionary with the same keys and values as the unpickled
         object, but where NumPy arrays have been converted to lists.
-    
+
     Notes
     -----
     This function takes in the path to a pickle file and saves the equivalent
     JSON file. All numpy arrays are converted to lists. All other objects are 
     preserved.
     """
-    
+
     p = unpickle(pickle_path)
     j_out = {}
     for key, value in p.items():
@@ -1814,23 +1824,23 @@ def pickle_to_json(pickle_path, json_path):
             j_out[key] = listify(value)
         else:
             j_out[key] = value
-    
+
     json_write_dictionary(json_path, j_out)
-    
+
     return j_out
 
 
 def running_average(a, n):
     """
     Compute the running average and standard deviation of an input array.
-    
+
     Parameters
     ----------
     a : array_like,
         Input array to compute the running average and standard deviation.
     n : int,
         Number of elements (plus/minus) to include in the running average.
-    
+
     Returns
     -------
     average : ndarray,
@@ -1839,7 +1849,7 @@ def running_average(a, n):
     std : ndarray,
         Array of the same shape as the input array 'a' containing the running 
         standard deviations.
-    
+
     Notes
     -----
     The function computes the running average and standard deviation of the 
@@ -1848,7 +1858,7 @@ def running_average(a, n):
       standard deviation are computed independently.
     - The middle part of the array, where the running average and standard 
       deviation are computed over a window of length '2n+1'.
-    """    
+    """
     # Beginning/end part of list
     start_average = np.zeros(n)
     end_average = np.zeros(n)
@@ -1856,33 +1866,33 @@ def running_average(a, n):
     end_std = np.zeros(n)
     for i in range(n):
         # Choose beginning/end of list
-        start_of_list = a[0:i+n+1]
-        end_of_list = a[-2*n+i:]
-        
+        start_of_list = a[0:i + n + 1]
+        end_of_list = a[-2 * n + i:]
+
         # Calculate average
         start_average[i] = np.mean(start_of_list)
         end_average[i] = np.mean(end_of_list)
-        
+
         # Calculate standard deviation
         start_std[i] = np.std(start_of_list)
         end_std[i] = np.std(end_of_list)
 
     # Middle part of list
-    mid_of_list = np.zeros([len(a) - 2*n, 2*n + 1])
-    for i in range(len(a) - 2*n):
+    mid_of_list = np.zeros([len(a) - 2 * n, 2 * n + 1])
+    for i in range(len(a) - 2 * n):
         # Choose middle part of list
-        mid_of_list[i] = a[i:2*n+i+1]
-        
+        mid_of_list[i] = a[i:2 * n + i + 1]
+
     # Calculate average
     mid_average = np.mean(mid_of_list, axis=1)
 
     # Calculate standard devitation
     mid_std = np.std(mid_of_list, axis=1)
-    
+
     # Concatenate arrays
     average = np.concatenate((start_average, mid_average, end_average))
     std = np.concatenate((start_std, mid_std, end_std))
-    
+
     return average, std
 
 
