@@ -1469,7 +1469,7 @@ def nes_pickle_plotter(t_counts, t_bins, t_bgr, e_bins_S1, e_bins_S2, matrix_S1,
                  linestyle='None')
 
     # Plot background component
-    ax3.plot(t_bins, t_bgr, 'C0--')
+    ax3.plot(t_bins, t_bgr, 'C2--')
 
     # Add lines for kinematic cuts
     if '--disable-cuts' not in inp_args:
