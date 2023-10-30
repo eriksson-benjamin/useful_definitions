@@ -270,11 +270,15 @@ def plot_matrix(matrix, bin_centres=None, log=False, xlabel=None, ylabel=None):
     return hist2d
 
 
-def plot_fission_chamber(shot_number, plot=True):
+def plot_fission_chamber(shot_number, t0=40, t1=80, plot=True):
     f_chamber = ppf.ppfget(shot_number, dda="TIN", dtyp="RNT")
     f_data = f_chamber[2]
     f_times = f_chamber[4]
     tot_yield = np.sum(f_data) * (f_times[1] - f_times[0])
+
+    t_mask = ((f_times >= t0) & (f_times <= t1))
+    f_data = f_data[t_mask]
+    f_times = f_times[t_mask]
 
     if plot:
         plot_string = 'Fission chamber\n' + 'shot number: ' + \
@@ -283,7 +287,7 @@ def plot_fission_chamber(shot_number, plot=True):
         plt.plot(f_times, f_data)
         plt.title(plot_string)
         plt.xlabel('Time [s]')
-        plt.ylabel('Events')
+        plt.ylabel('Neutron rate (s$^{-1}$)')
     return f_data, f_times
 
 
@@ -508,8 +512,7 @@ def import_times(board='', channel='', path='', full_path=0):
         # The appropritate column must be chosen for the ADQ14's
         T = np.fromfile(fname, dtype='uint64')
         nrecords = int(len(T) / 5)
-        T = np.reshape(T, (nrecords, 5)) / \
-            8.  # 0.125 = conversion factor to ns for ADQ14
+        T = np.reshape(T, (nrecords, 5)) / 8.  # 0.125 = conversion factor to ns for ADQ14
         return T[:, 2]
 
 
@@ -721,6 +724,64 @@ def get_CXRS_Ti(shot_number, time_range=None):
     return Ti, time
 
 
+def get_Ip(shot_number, time_range=None):
+    '''
+    Returns ion current (A) and time (s) for given shot number.
+    '''
+
+    ipla = ppf.ppfget(shot_number, dda='MAGN', dtyp='IPLA')
+    I = ipla[2]
+    time = ipla[4]
+
+    # Find time slice
+    if time_range:
+        start = np.searchsorted(time, time_range[0], side='right')
+        stop = np.searchsorted(time, time_range[1], side='left')
+        I = I[start:stop]
+        time = time[start:stop]
+
+    return I, time
+
+
+def get_Bt(shot_number, time_range=None):
+    '''
+    Returns toroidal B-field (T) at R = 2.96 m and time (s) for given shot 
+    number.
+    '''
+
+    bvac = ppf.ppfget(shot_number, dda='MAGN', dtyp='BVAC')
+    B = bvac[2]
+    time = bvac[4]
+
+    # Find time slice
+    if time_range:
+        start = np.searchsorted(time, time_range[0], side='right')
+        stop = np.searchsorted(time, time_range[1], side='left')
+        B = B[start:stop]
+        time = time[start:stop]
+
+    return B, time
+
+
+def get_NBI_power(shot_number, time_range=None):
+    '''
+    Returns NBI power (W) and time (s) for given shot number.
+    '''
+
+    nblm = ppf.ppfget(shot_number, dda='NBI', dtyp='NBLM')
+    P = nblm[2]
+    time = nblm[4]
+
+    # Find time slice
+    if time_range:
+        start = np.searchsorted(time, time_range[0], side='right')
+        stop = np.searchsorted(time, time_range[1], side='left')
+        P = P[start:stop]
+        time = time[start:stop]
+
+    return P, time
+
+
 def get_Te(shot_number, time_range=None, diag='all'):
     '''
     Return the electron temperature (keV) and time (s) for a given shot 
@@ -752,6 +813,31 @@ def get_Te(shot_number, time_range=None, diag='all'):
             Te[key] = new_val
 
     return Te
+
+def get_ne(shot_number, time_range=None, diag='all'):
+    '''
+    Return the electron density (1/m^3) and time (s) for a given shot 
+    number measured by various diagnostics.
+    '''
+    ne = {}
+    
+    if diag in ('HRTX', 'all'):
+        hrts_ne = ppf.ppfget(dda='HRTX', dtyp='NE0', pulse=shot_number)
+        ne['HRTX'] = [hrts_ne[4], hrts_ne[2]]
+    if diag in ('LIDX', 'all'):
+        lidx_ne = ppf.ppfget(dda='LIDX', dtyp='NE0', pulse=shot_number)
+        ne['LIDX'] = [lidx_ne[4], lidx_ne[2]]
+
+
+    # Find time slice
+    if time_range:
+        for key, val in ne.items():
+            start = np.searchsorted(val[0], time_range[0], side='right')
+            stop = np.searchsorted(val[0], time_range[1], side='left')
+            new_val = [val[0][start:stop], val[1][start:stop]]
+            ne[key] = new_val
+
+    return ne
 
 
 def reset_matplotlib():
@@ -1102,6 +1188,9 @@ def plot_discharge(shot_number, t=[None, None]):
     fig.subplots_adjust(hspace=0.2)
     ax[0, 0].set_title(f'JPN {shot_number}', loc='left')
 
+    ax[-1, 0].set_xlabel(r'$t_{JET}$ (s)')
+    ax[-1, 1].set_xlabel(r'$t_{JET}$ (s)')
+
 
 def plot_rf_power(shot_number, t_range=[None, None]):
     # Get ICRH data
@@ -1154,7 +1243,7 @@ def plot_kt5p(shot_number, t_range=[None, None]):
     # Plot
     plt.plot(times, t_f1, label='$n_T/(n_T+n_D+n_H)$')
     plt.plot(times, t_f2, label='$n_T/(n_D+n_T)$')
-    plt.plot(times, t_f3, label='$n_D/(n_D+n_T+n_H$')
+    plt.plot(times, t_f3, label='$n_D/(n_D+n_T+n_H$)')
     plt.xlabel('Time (s)')
     plt.ylabel('Concentration (%)')
     plt.legend()
@@ -1679,14 +1768,17 @@ def plot_drf(path):
     return drf
 
 
-def plot_drf_energy_projection(tof, drf_path, kinematic_cuts=False):
+def plot_drf_energy_projection(tof, drf_path):
     """
     Plot TOFu response function energy spectrum for given TOF.
 
     Parameters
     ----------
     tof : tuple,
-        Tuple with two upper and lower bounds on time-of-flight.
+        Tuple with two upper and lower bounds on time-of-flight (ns).
+    drf_path : str,
+        Path to the detector response function (either with or without
+        kinematic cuts).
     """
     set_nes_plot_style()
     drf = numpify(json_read_dictionary(drf_path))
@@ -1705,7 +1797,74 @@ def plot_drf_energy_projection(tof, drf_path, kinematic_cuts=False):
     plt.title(f'DRF energy projection {tof[0]}-{tof[1]} ns', loc='right')
     return 0
 
+def plot_drf_tof_projection(energy, drf_path, plot=True):
+    """
+    Plot TOFu response function TOF spectrum for given energy.
 
+    Parameters
+    ----------
+    energy : tuple,
+        Tuple with two upper and lower bounds on energy (MeV).
+    drf_path : str,
+        Path to the detector response function (either with or without
+        kinematic cuts).
+    """
+    set_nes_plot_style()
+    drf = numpify(json_read_dictionary(drf_path))
+
+    # Mask for times-of-flight
+    erg_mask = ((drf['x'] / 1000 >= energy[0]) & (drf['x'] / 1000 <= energy[1]))
+
+    # Projection on energy axis
+    tof_proj = np.sum(drf['matrix'][erg_mask, :], axis=0)
+    
+    # Plot projection
+    if plot:
+        plt.figure(f'DRF energy projection {energy[0]}-{energy[1]} MeV')
+        plt.plot(drf['y'], tof_proj, 'k')
+        plt.xlabel('t$_{TOF}$ (ns)')
+        plt.ylabel('counts/bin')
+        plt.title(f'DRF energy projection {energy[0]}-{energy[1]} MeV', loc='right')
+    
+    return drf['y'], tof_proj
+
+def energy_projection_lookup_table(drf_path='/home/beriksso/NES/drf/26-11-2022/tofu_drf_scaled_kin_ly.json', tof_list=[]):
+    """
+    Plot the energy projection for intervals of 5 ns time-of-flight.
+    """
+    set_nes_plot_style()
+    drf = numpify(json_read_dictionary(drf_path))
+    
+    if len(tof_list) == 0:
+        # Times-of-flight to project onto energy axis
+        t1 = np.arange(25, 70, 1)
+        t2 = np.arange(70, 90, 2)
+        t3 = np.arange(90, 105, 5)
+        tof_list = np.append(t1, np.append(t2, t3))
+
+    plt.figure(f'DRF energy projections 5-100 ns')    
+    for tof in tof_list:
+        # Mask for times-of-flight
+        tof_mask = ((drf['y'] >= tof - 0.5) & (drf['y'] <= tof + 0.5))
+        
+        # Projection on energy axis
+        erg_proj = np.sum(drf['matrix'][:, tof_mask], axis=1)
+
+        # Find peak location
+        peak_loc = np.argmax(erg_proj)
+        x = drf['x'][peak_loc] / 1000  # MeV
+    
+        # Plot projection
+        plt.plot(drf['x'] / 1000, erg_proj / erg_proj.max(), label='{x}')
+
+        
+        print(f'{tof} ns: {x} MeV')
+        
+        
+    plt.xlabel('$E_n$ (MeV)')
+    plt.title(f'DRF energy projection 5-100 ns', loc='right')
+    plt.xscale('log')
+    
 def plot_kinematic_cuts(tof, cut_factors=[1, 1, 1], proton_recoil=False):
     """
     Plot upper/lower limits of proton recoil energies for S1 and S2.
@@ -1898,3 +2057,7 @@ def running_average(a, n):
 
 if __name__ == '__main__':
     pass
+
+    
+
+
