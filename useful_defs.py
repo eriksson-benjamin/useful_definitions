@@ -1228,22 +1228,28 @@ def plot_kt5p(shot_number, t_range=[None, None]):
 
     plt.figure(f'{shot_number} KT5P')
 
-    # Calculate T fractions
-    t_f1 = t[2] / (t[2] + h[2] + d[2]) * 100
-    t_f2 = t[2] / (t[2] + d[2]) * 100
-    t_f3 = d[2] / (t[2] + d[2] + h[2]) * 100
+    # Calculate H fractions
+    t_f1 = h[2] / (t[2] + h[2] + d[2]) * 100
+    t_f2 = d[2] / (t[2] + d[2] + h[2]) * 100
+    t_f3 = t[2] / (t[2] + h[2] + d[2]) * 100
+    
+    t_ft = t[2] / (t[2] + d[2]) * 100
+    
 
     # Remove NaNs
     not_nans = np.invert(np.isnan(t_f1) * np.isnan(t_f2) * np.isnan(t_f3))
     t_f1 = t_f1[not_nans]
     t_f2 = t_f2[not_nans]
     t_f3 = t_f3[not_nans]
+    t_ft = t_ft[not_nans]
     times = t[4][not_nans]
 
     # Plot
-    plt.plot(times, t_f1, label='$n_T/(n_T+n_D+n_H)$')
-    plt.plot(times, t_f2, label='$n_T/(n_D+n_T)$')
-    plt.plot(times, t_f3, label='$n_D/(n_D+n_T+n_H$)')
+    plt.plot(times, t_f1, label='$n_H/(n_T+n_D+n_H)$')
+    plt.plot(times, t_f2, label='$n_D/(n_T+n_D+n_H)$')
+    plt.plot(times, t_f3, label='$n_T/(n_D+n_T+n_H)$')
+    
+    plt.plot(times, t_ft, label='$n_T/(n_D+n_T)$')
     plt.xlabel('Time (s)')
     plt.ylabel('Concentration (%)')
     plt.legend()
@@ -1270,6 +1276,57 @@ def plot_kt5p(shot_number, t_range=[None, None]):
     except:
         breakpoint()
     return h, d, t
+
+
+def plot_ks3b(shot_number, t_range=[None, None]):
+    set_nes_plot_style()
+    h = ppf.ppfget(dda='KS3B', dtyp='HTHD', pulse=shot_number)
+    t = ppf.ppfget(dda='KS3B', dtyp='TTTD', pulse=shot_number)
+    
+
+    plt.figure(f'{shot_number} KS3B')
+
+    # Calculate H fractions
+    t_f1 = h[2] * 100
+    t_f3 = t[2] * 100
+
+    # Remove NaNs
+    not_nans = np.invert(np.isnan(t_f1) * np.isnan(t_f3))
+    t_f1 = t_f1[not_nans]
+    t_f3 = t_f3[not_nans]
+    times = t[4][not_nans]
+
+    # Plot
+    plt.plot(times, t_f1, label='$n_H/(n_T+n_D+n_H)$')
+    plt.plot(times, t_f3, label='$n_T/(n_D+n_T+n_H)$')
+    
+    plt.xlabel('Time (s)')
+    plt.ylabel('Concentration (%)')
+    plt.legend()
+    plt.title(f'JPN {shot_number}')
+
+    try:
+        # Set x-y lims
+        if t_range[0] != None and t_range[1] != None:
+            plt.xlim(t_range)
+            # Grab subsets
+            t_s1 = t_f1[(times > t_range[0]) & (times < t_range[1])]
+            t_s3 = t_f3[(times > t_range[0]) & (times < t_range[1])]
+            y_max = np.max([t_s1.max(), t_s3.max()])
+            y_min = np.min([t_s1.min(), t_s3.min()])
+            if y_max > 90:
+                y_max = 110
+            else:
+                y_max *= 1.2
+            if y_min < 10:
+                y_min = -5
+            else:
+                y_min *= 0.8
+            plt.ylim(y_min, y_max)
+    except:
+        breakpoint()
+    return h, t
+
 
 
 def get_t_fraction(t_low, t_high):
@@ -2056,7 +2113,8 @@ def running_average(a, n):
 
 
 if __name__ == '__main__':
-    "Test new Github authentication key"
+    plot_kt5p(99596)
+    plot_ks3b(99596)
     pass
 
     
