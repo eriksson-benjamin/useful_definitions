@@ -276,22 +276,46 @@ def plot_fission_chamber(shot_number, t0=40, t1=80, plot=True):
     f_times = f_chamber[4]
     tot_yield = np.sum(f_data) * (f_times[1] - f_times[0])
 
+    f_chamber_2 = ppf.ppfget(shot_number, dda="TIN", dtyp="R14")
+    f_data_2 = f_chamber_2[2]
+    f_times_2 = f_chamber_2[4]    
+    
     t_mask = ((f_times >= t0) & (f_times <= t1))
     f_data = f_data[t_mask]
     f_times = f_times[t_mask]
-
+    
+    t_mask_2 = ((f_times_2 >= t0) & (f_times_2 <= t1))
+    f_data_2 = f_data_2[t_mask_2]
+    f_times_2 = f_times_2[t_mask_2]
+    
+        
     if plot:
         plot_string = 'Fission chamber\n' + 'shot number: ' + \
             str(shot_number) + '\ntotal yield: ' + str(tot_yield)
         plt.figure(plot_string)
-        plt.plot(f_times, f_data)
+        plt.plot(f_times, f_data, label='RNT')
+        plt.plot(f_times_2, f_data_2, label='R14')
         plt.title(plot_string)
         plt.xlabel('Time [s]')
         plt.ylabel('Neutron rate (s$^{-1}$)')
-    return f_data, f_times
+        plt.legend()
+    return (f_times, f_data), (f_times_2, f_data_2)
 
 
-def get_neutron_yield(shot, t0, t1):
+def rnt_r14_fraction(shot_number, t0=40, t1=80):
+    rnt, r14 = plot_fission_chamber(shot_number, t0, t1)
+    
+    # Interpolate to same axis
+    rnt_y = np.interp(r14[0], rnt[0], rnt[1])
+    
+    plt.figure(f'R14/(R14 + RNT) {shot_number} {t0}-{t1} s')
+    plt.plot(r14[0], r14[1]/(rnt_y + r14[1]))
+    plt.xlabel('Time (s)')
+    plt.ylabel('R14/(R14 + RNT)')
+   
+
+
+def get_neutron_yield(shot, t0=40, t1=80):
     # Import fission chamber information
     f_chamber = ppf.ppfget(shot, dda="TIN", dtyp="RNT")
     f_data = f_chamber[2]
@@ -1084,7 +1108,6 @@ def plot_discharge(shot_number, t=[None, None]):
     fig, ax = plt.subplots(nrows=3, ncols=2, sharex=True)
     fig.set_figheight(8)
     fig.set_figwidth(10)
-    ax[0, 0].xaxis.set_major_locator(plt.MultipleLocator(5))
     for axis in ax.flatten():
         axis.tick_params(which='major', length=4, width=1)
 
@@ -1235,7 +1258,6 @@ def plot_kt5p(shot_number, t_range=[None, None]):
     
     t_ft = t[2] / (t[2] + d[2]) * 100
     
-
     # Remove NaNs
     not_nans = np.invert(np.isnan(t_f1) * np.isnan(t_f2) * np.isnan(t_f3))
     t_f1 = t_f1[not_nans]
@@ -2113,8 +2135,7 @@ def running_average(a, n):
 
 
 if __name__ == '__main__':
-    plot_kt5p(99596)
-    plot_ks3b(99596)
+    rnt_r14_fraction(104203)
     pass
 
     
